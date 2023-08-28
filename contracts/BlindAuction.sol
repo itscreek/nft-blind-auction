@@ -16,6 +16,9 @@ contract BlindAuction is EIP712WithModifier{
     // Current highest bid.
     euint32 internal highestBid;
 
+    // Current second highest bid.
+    euint32 internal secondHighestBid;
+
     // struct of bid datas
     struct BidData {
         // Mapping from bidder to their bid value.
@@ -32,6 +35,10 @@ contract BlindAuction is EIP712WithModifier{
 
     // The token contract used for encrypted bids.
     EncryptedERC20 public tokenContract;
+
+    // Auction Type
+    enum AuctionTypes {firstPrice, secondPrice}
+    AuctionTypes public auctionType;
 
     // Whether the auction object has been claimed.
     bool public objectClaimed;
@@ -61,11 +68,13 @@ contract BlindAuction is EIP712WithModifier{
         address _beneficiary,
         EncryptedERC20 _tokenContract,
         uint biddingTime,
+        uint _auctionType, // _auctionType must be 0 or 1. 0 is first price auction and 1 is second price auction.
         bool isStoppable
     ) EIP712WithModifier("Authorization token", "1") {
         beneficiary = _beneficiary;
         tokenContract = _tokenContract;
         endTime = block.timestamp + biddingTime;
+        auctionType = AuctionTypes(_auctionType);
         objectClaimed = false;
         tokenTransferred = false;
         bidData.bidCounter = 0;
@@ -98,6 +107,17 @@ contract BlindAuction is EIP712WithModifier{
         } else {
             highestBid = TFHE.cmux(TFHE.lt(highestBid, currentBid), currentBid, highestBid);
         }
+
+        if (auctionType == AuctionTypes.secondPrice) {
+            if (!TFHE.isInitialized(secondHighestBid)) {
+                secondHighestBid = currentBid;
+            } else {
+                euint8 isHigherThanSecondHighest = TFHE.asEuint8(TFHE.lt(secondHighestBid, currentBid));
+                euint8 isLowerThanHighest = TFHE.asEuint8(TFHE.gt(highestBid, currentBid));
+                ebool updateSecondHighest = TFHE.asEbool(TFHE.and(isHigherThanSecondHighest, isLowerThanHighest));
+                secondHighestBid = TFHE.cmux(updateSecondHighest, currentBid, secondHighestBid);
+            }
+        }
     }
 
     function getBid(
@@ -109,12 +129,12 @@ contract BlindAuction is EIP712WithModifier{
 
     // Stop the auction
     function stop() public onlyContractOwner {
-        require(stoppable);
+        require(stoppable && !tokenTransferred && !objectClaimed);
         manuallyStopped = true;
         emit AuctionStopped();
     }
 
-    // Refund the user bids
+    // Refund the user bids if the auction is stopped
     function refund() public onlyContractOwner {
         require(manuallyStopped);
 
@@ -145,6 +165,12 @@ contract BlindAuction is EIP712WithModifier{
         TFHE.req(TFHE.le(highestBid, bidData.bids[msg.sender]));
 
         objectClaimed = true;
+        if (auctionType == AuctionTypes.firstPrice) {
+            bidData.bids[msg.sender] = TFHE.NIL32;
+        }
+        if (auctionType == AuctionTypes.secondPrice) {
+            bidData.bids[msg.sender] = TFHE.sub(highestBid, secondHighestBid);
+        }
         emit AuctionWinner(msg.sender);
     }
 
@@ -153,13 +179,23 @@ contract BlindAuction is EIP712WithModifier{
         require(!tokenTransferred);
 
         tokenTransferred = true;
-        tokenContract.transfer(beneficiary, highestBid);
+        if (auctionType == AuctionTypes.firstPrice) {
+            tokenContract.transfer(beneficiary, highestBid);
+        }
+
+        if (auctionType == AuctionTypes.secondPrice) {
+            tokenContract.transfer(beneficiary, secondHighestBid);
+        }
     }
 
     // Withdraw a bid from the auction to the caller once the auction has stopped.
     function withdraw() public onlyAfterEnd {
         euint32 bidValue = bidData.bids[msg.sender];
-        TFHE.req(TFHE.le(bidValue, highestBid));
+
+        if (!objectClaimed) {
+            TFHE.req(TFHE.lt(bidValue, highestBid));
+        }
+
         bidData.bids[msg.sender] = TFHE.NIL32;
         tokenContract.transfer(msg.sender, bidValue);
     }

@@ -68,7 +68,7 @@ contract BlindAuction is EIP712WithModifier{
         address _beneficiary,
         EncryptedERC20 _tokenContract,
         uint biddingTime,
-        uint _auctionType, // _auctionType must be 0 or 1. 0 is first price auction and 1 is second price auction.
+        uint _auctionType,
         bool isStoppable
     ) EIP712WithModifier("Authorization token", "1") {
         beneficiary = _beneficiary;
@@ -160,7 +160,7 @@ contract BlindAuction is EIP712WithModifier{
     }
 
     // Claim the object. Succeeds only if the caller has the highest bid.
-    function claim() public onlyAfterEnd {
+    function claim() public virtual onlyAfterEnd {
         require(!objectClaimed);
         TFHE.req(TFHE.le(highestBid, bidData.bids[msg.sender]));
 

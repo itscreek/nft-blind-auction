@@ -16,6 +16,8 @@ contract PlatformCore {
     // Mapping from seller to their auctions
     mapping(address => BlindAuction[]) public auctionsList;
 
+    error InvalidAuctionType();
+
     constructor(EncryptedERC20 _encryptedERC20Contract, Adam721Like _ERC721Contract) {
         encryptedERC20Contract = _encryptedERC20Contract;
         ERC721Contract = _ERC721Contract;
@@ -27,16 +29,15 @@ contract PlatformCore {
         bytes32 auctionTypeHashed = keccak256(abi.encodePacked(auctionType));
         if (auctionTypeHashed == keccak256(abi.encodePacked("first-price"))) {
             _auctionType = 0;
-        }
-        if (auctionTypeHashed == keccak256(abi.encodePacked("second-price"))) {
+        } else if (auctionTypeHashed == keccak256(abi.encodePacked("second-price"))) {
             _auctionType = 1;
+        } else {
+            revert InvalidAuctionType();
         }
 
-        BlindAuction auction = new ERC721BlindAuction(msg.sender, encryptedERC20Contract, biddingTime, _auctionType, isStoppable, ERC721Contract, tokenId);
+        auction = new ERC721BlindAuction(msg.sender, encryptedERC20Contract, biddingTime, _auctionType, isStoppable, ERC721Contract, tokenId);
 
         auctionsList[msg.sender].push(auction);
-
-        return auction;
     }
 
     // return the number of auctions

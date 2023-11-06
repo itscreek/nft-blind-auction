@@ -1,3 +1,8 @@
+# NFT Blind Auction Platform
+
+This is a blind auction platform for NFT that works on blockchain. A seller can sell their own NFT and its price is
+determined by a blind auction. All bids are encrypted and each bidder doesn't know the bid amount of the other bidders.
+
 # Hardhat Template [![Open in Gitpod][gitpod-badge]][gitpod] [![Github Actions][gha-badge]][gha] [![Hardhat][hardhat-badge]][hardhat] [![License: MIT][license-badge]][license]
 
 [gitpod]: https://gitpod.io/#https://github.com/zama-ai/fhevm-hardhat-template

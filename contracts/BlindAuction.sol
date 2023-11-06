@@ -8,7 +8,7 @@ import "fhevm/lib/TFHE.sol";
 
 import "./EncryptedERC20.sol";
 
-contract BlindAuction is EIP712WithModifier{
+contract BlindAuction is EIP712WithModifier {
     uint public endTime;
 
     address public beneficiary;
@@ -23,10 +23,8 @@ contract BlindAuction is EIP712WithModifier{
     struct BidData {
         // Mapping from bidder to their bid value.
         mapping(address => euint32) bids;
-
         // Number of bid
         uint bidCounter;
-
         // Array of bidders addresses
         address[] bidders;
     }
@@ -37,7 +35,10 @@ contract BlindAuction is EIP712WithModifier{
     EncryptedERC20 public tokenContract;
 
     // Auction Type
-    enum AuctionTypes {firstPrice, secondPrice}
+    enum AuctionTypes {
+        firstPrice,
+        secondPrice
+    }
     AuctionTypes public auctionType;
 
     // Whether the auction object has been claimed.

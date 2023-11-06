@@ -33,16 +33,9 @@ import "@openzeppelin/contracts/interfaces/IERC165.sol";
  *
  * _Deprecated in favor of https://wizard.openzeppelin.com/[Contracts Wizard]._
  */
-contract Adam721Like is
-    Context,
-    AccessControlEnumerable,
-    ERC721Enumerable,
-    ERC721Burnable,
-    ERC721Pausable,
-    IERC4906
-{
+contract Adam721Like is Context, AccessControlEnumerable, ERC721Enumerable, ERC721Burnable, ERC721Pausable, IERC4906 {
     using Counters for Counters.Counter;
-     using Strings for uint256;
+    using Strings for uint256;
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
@@ -130,7 +123,7 @@ contract Adam721Like is
         return super.supportsInterface(interfaceId);
     }
 
-   /**
+    /**
      * @dev See {IERC721Metadata-tokenURI}.
      */
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {

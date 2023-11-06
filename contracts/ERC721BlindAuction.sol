@@ -23,7 +23,7 @@ contract ERC721BlindAuction is BlindAuction {
         targetTokenId = _targetTokenId;
     }
 
-    function claim() public onlyAfterEnd override(BlindAuction){
+    function claim() public override(BlindAuction) onlyAfterEnd {
         require(!objectClaimed);
         TFHE.req(TFHE.le(highestBid, bidData.bids[msg.sender]));
 
